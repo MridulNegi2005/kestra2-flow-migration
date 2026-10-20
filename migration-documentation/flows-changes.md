@@ -40,7 +40,7 @@ Last reconciled against the customer-facing v2.0.0 migration guide on **2026-08-
 - **Python script default image changed:** If you depended on `ghcr.io/kestra-io/kestrapy:latest`, set `containerImage` or add `dependencies` for `kestra` and `amazon-ion`.
 - **Script warnings no longer affect task state:** WARNING/ERROR logs on stderr no longer mark tasks as WARNING; use explicit failures or non-zero exit codes if needed.
 - **LangChain4j plugin renamed:** Replace `io.kestra.plugin.langchain4j.*` with `io.kestra.plugin.ai.*` for tasks and providers.
-- **Retry property renamed:** Replace `maxAttempt` with `maxAttempts`.
+- **Retry property renamed:** Replace `maxAttempt` with `maxAttempts` in `retry` policies (flow, tasks, `pluginDefaults`). Keys named `maxAttempt` in user data, such as `variables` or task payloads, are not retry properties and are left alone.
 - **Dynamic input defaults:** Move Pebble expressions out of `defaults` and into task logic (for example, `{{ inputs.sessionId ?? execution.id }}`).
 - **Reserved flow IDs disallowed:** Rename flows using reserved IDs (`pause`, `resume`, `force-run`, `change-status`, `kill`, `executions`, `search`, `source`, `disable`, `enable`). Append a `-flow` suffix to any flow whose `id` matches a reserved keyword.
 - **Singer plugin removed:** Replace Singer flows with Airbyte, dlt, or CloudQuery tasks.

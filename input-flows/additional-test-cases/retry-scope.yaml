@@ -1,0 +1,21 @@
+# kestra2-flow-migration#54: only retry policies are migrated; `maxAttempt` keys in user data stay as written
+id: retry_scope
+namespace: migration.flows
+
+retry:
+  type: constant
+  interval: PT1S
+  maxAttempt: 2
+
+variables:
+  payload:
+    maxAttempt: 4
+
+tasks:
+  - id: show
+    type: io.kestra.plugin.core.log.Log
+    message: "{{ vars.payload.maxAttempt }}"
+    retry:
+      type: constant
+      interval: PT1S
+      maxAttempt: 3
