@@ -144,7 +144,7 @@ Rules are applied in order via the `rules` slice. Each rule is a `func(*yaml.Nod
 |------|-------------|
 | `renameInputNameToID` | Inputs: `name` → `id` |
 | `renameInputAndOutputTypes` | Inputs and root-level flow outputs: `BOOLEAN` → `BOOL`, `ENUM` → `SELECT` |
-| `renameMaxAttemptToMaxAttempts` | Retry: `maxAttempt` → `maxAttempts` (global) |
+| `renameMaxAttemptToMaxAttempts` | Retry: `maxAttempt` → `maxAttempts` in retry policies (flow, tasks, `pluginDefaults`); user data is left alone |
 | `renamePauseDelayToPauseDuration` | Pause task: `delay` → `pauseDuration` |
 | `normalizeFetchType` | `fetchType: STORE/FETCH` → `store: true` / `fetch: true` (specific plugins) |
 | `renameTaskDefaults` | Top-level: `taskDefaults` → `pluginDefaults`. **Not** in the `rules` slice — v1-compat-only post-step in `Apply()`, applied **only** under `--stay-v1-compatible` (`pluginDefaults` is removed in v2; see note below) |

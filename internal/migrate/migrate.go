@@ -502,12 +502,65 @@ func renameInputAndOutputTypes(doc *yaml.Node) error {
 	return nil
 }
 
-// renameMaxAttemptToMaxAttempts renames `maxAttempt` → `maxAttempts` everywhere
-// in the document. (flows-changes.md: Retry property renamed)
+// renameMaxAttemptToMaxAttempts visits retry policies, not arbitrary payloads
+// containing keys named `retry` or `maxAttempt`.
 func renameMaxAttemptToMaxAttempts(doc *yaml.Node) error {
-	walkMappings(doc, func(m *yaml.Node) {
-		renameKey(m, "maxAttempt", "maxAttempts")
+	var visit func(*yaml.Node, string)
+	task := func(m *yaml.Node) { visit(m, stringValue(m, "type")) }
+	visit = func(owner *yaml.Node, typ string) {
+		if owner == nil || owner.Kind != yaml.MappingNode {
+			return
+		}
+		if retry := mappingValue(owner, "retry"); retry != nil && retry.Kind == yaml.MappingNode {
+			renameKey(retry, "maxAttempt", "maxAttempts")
+		}
+		if renamed, ok := typeRenames[typ]; ok {
+			typ = renamed
+		}
+		for _, key := range []string{"errors", "finally"} {
+			forEachMappingItem(mappingValue(owner, key), task)
+		}
+		if typ == "io.kestra.plugin.core.flow.Dag" {
+			forEachMappingItem(mappingValue(owner, "tasks"), func(wrapper *yaml.Node) {
+				if child := mappingValue(wrapper, "task"); child != nil && child.Kind == yaml.MappingNode {
+					task(child)
+				}
+			})
+		} else {
+			forEachMappingItem(mappingValue(owner, "tasks"), task)
+		}
+		switch typ {
+		case "io.kestra.plugin.core.flow.If":
+			for _, key := range []string{"then", "else"} {
+				forEachMappingItem(mappingValue(owner, key), task)
+			}
+		case "io.kestra.plugin.core.flow.Switch":
+			if cases := mappingValue(owner, "cases"); cases != nil && cases.Kind == yaml.MappingNode {
+				for i := 1; i < len(cases.Content); i += 2 {
+					forEachMappingItem(cases.Content[i], task)
+				}
+			}
+			forEachMappingItem(mappingValue(owner, "defaults"), task)
+		case "io.kestra.plugin.core.flow.Pause":
+			if child := mappingValue(owner, "onPause"); child != nil && child.Kind == yaml.MappingNode {
+				task(child)
+			}
+		}
+	}
+	root := docRoot(doc)
+	if root == nil || root.Kind != yaml.MappingNode {
+		return nil
+	}
+	visit(root, "")
+	forEachMappingItem(mappingValue(root, "afterExecution"), task)
+	forEachMappingItem(mappingValue(root, "listeners"), func(listener *yaml.Node) {
+		forEachMappingItem(mappingValue(listener, "tasks"), task)
 	})
+	for _, key := range []string{"pluginDefaults", "taskDefaults"} {
+		forEachMappingItem(mappingValue(root, key), func(defaults *yaml.Node) {
+			visit(mappingValue(defaults, "values"), stringValue(defaults, "type"))
+		})
+	}
 	return nil
 }
 
